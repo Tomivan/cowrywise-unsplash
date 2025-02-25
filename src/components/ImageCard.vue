@@ -1,50 +1,53 @@
 <template>
-  <section class="image-card">
+  <section>
 
-      <template v-if="loading">
-        <VueContentLoading v-for="i in 6" :key="i">
-          <rect x="0" y="0" rx="5" ry="5" width="200" height="250" />
-          <rect x="0" y="260" rx="5" ry="5" width="150" height="20" />
-          <rect x="0" y="290" rx="5" ry="5" width="100" height="20" />
-        </VueContentLoading>
-      </template>
+      <div v-if="loading">
+        <vue-skeleton-loader :width="200" :height="100" />
+      </div>
 
-      <template v-else>
-        <div class="card" v-for="(item, index) in photos" :key="{index}">
-            <img :src="item.urls.small" alt="" class="photo">
+      <div v-else>
+        <div v-if="photos.length > 0" class="image-card">
+          <div class="card" v-for="(item, index) in photos" :key="index">
+            <div class="overlay"></div>
+            <img :src="item.urls?.small" alt="Image" class="photo">
             <div class="details">
-                <p>{{item.user.name}}</p>
-                <p>{{item.user.location}}</p>
+              <p>{{ item.user?.name || 'Unknown' }}</p>
+              <p>{{ item.user?.location || 'Unknown' }}</p>
             </div>
+          </div>
         </div>
-      </template>
+
+      <!-- Handle Empty State -->
+      <p v-else>No images found.</p>
+    </div>
     </section>
 </template>
 
 <script>
-import VueContentLoading from 'vue-content-loading';
+import VueSkeletonLoader from "vue-skeleton-loader";
 
 export default {
   name: 'ImageCard',
   components: {
-    VueContentLoading,
+    VueSkeletonLoader,
   },
   props: {
-    searchResults: Array, 
-    loading: Boolean,
+    searchResults: {
+      type: Array,
+      default: () => []
+    }, 
   },
    data() {
     return {
-      photos: []
+      photos: [],
+      loading: true
     }
     },
     watch: {
       searchResults: {
         immediate: true,
         handler(newResults) {
-          if (newResults.length > 0) {
-            this.photos = newResults;
-          }
+            this.photos = newResults || [];
         },
       },
     },
@@ -52,15 +55,27 @@ export default {
       this.getUnsplashPhotos()
   },
    methods: {
-    getUnsplashPhotos() {
-     const headers = { "Authorization": "Client-ID J05MCgl8YDTlnEQRvSyg4mKnaEEU6iC6GSgc6etlexU"};
-  fetch("https://api.unsplash.com/photos",  { headers })
+    getUnsplashPhotos(query = "") {
+    this.loading = true;
+    const url = query
+        ? `https://api.unsplash.com/search/photos?query=${query}`
+        : "https://api.unsplash.com/photos";
+    fetch(url, {
+      headers: { "Authorization": "Client-ID J05MCgl8YDTlnEQRvSyg4mKnaEEU6iC6GSgc6etlexU" }
+    })
     .then(response => response.json())
     .then(data => {
-        this.photos = data;
+      this.photos = query ? data.results : data; 
+      this.loading = false;
     })
-    .catch(error => console.log('error: ', error))
+    .catch(error => {
+      console.error("Error fetching photos:", error);
+      this.loading = false;
+    });
   },
+  updatePhotos(newPhotos) {
+    this.photos = newPhotos
+  }
   }
 }
 </script>
@@ -73,13 +88,27 @@ export default {
   margin: -1% 0 0 23%;
   width: 60%;
 }
+.overlay{
+  position: absolute;
+  width: 16vw;
+  height: 40vh;
+  background: rgba(0, 0, 0, 0.5)
+}
 .card{
-  margin: 0 2% 2% 0;
+  margin: 0 2% 5% 0;
 }
 .photo{
   width: 16vw;
   height: 40vh;
   border-radius: 5px;
+}
+.details{
+  position: relative;
+  margin-top: -40%;
+  color: #ffffff;
+  z-index: 100;
+  padding-left: 1em;
+  font-size: 12px;
 }
 
 @media screen and (max-width: 768px){

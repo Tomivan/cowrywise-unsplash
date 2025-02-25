@@ -9,20 +9,14 @@
           <span class="pi pi-search"></span>
           <input type="text" placeholder="Search for photo" v-model="search" @input="debouncedSearch">
         </div>
-
-        <ImageCard :photos="photos" :loading="loading" />
     </div>
   </template>
   
   <script>
   import "primeicons/primeicons.css";
-  import ImageCard from "./ImageCard.vue";
   
   export default {
     name: "SearchPhoto",
-    components: {
-        ImageCard
-    },
     data() {
     return {
       photos: [],
@@ -30,9 +24,6 @@
       loading: false,
       debounceTimeout: null,
     };
-    },
-    created() {
-      this.searchPhotos();
     },
     methods: {
       searchPhotos() {
@@ -50,9 +41,13 @@
           .then((response) => response.json())
           .then((data) => {
             this.photos = data.results; // Store the fetched images
-            console.log(this.photos); // Check the response in the console
+            this.loading = false;
+            this.$emit("search-results", this.photos);
           })
-          .catch((error) => console.error("Error fetching photos:", error));
+          .catch((error) => {
+            console.error("Error fetching photos:", error)
+            this.loading = false;
+        });
       },
       debouncedSearch() {
         clearTimeout(this.debounceTimeout);
@@ -63,7 +58,7 @@
       resetSearch() {
         this.search = "";
         this.photos = [];
-        this.$refs.imageCard.getUnsplashPhotos(); 
+        this.$emit("reset"); 
       }
     },
   };
@@ -82,9 +77,10 @@
     border: 1px solid #0000001e;
     border-radius: 5px;
     margin-left: 15%;
+    padding-left: 4em;
   }
   input::placeholder{
-    padding-left: 4em;
+    padding-left: 2em;
   }
   .pi-search{
     position: relative;
